@@ -7,18 +7,18 @@ A data aggregation/analytics API to extract store data (number of downloads, pur
 
 It´s meant to work like this:
 
->> Put your username and password in and get (nice and meaningful) data out.
+> Put your username and password in and get (nice and meaningful) data out.
 
 Why?
 ----
 Reason A:
->>BlackBerrys "Vendor Portal" reports are suboptimal from a modern developer perspective (e.g.: no "total-daily-revenue" chart).
+> BlackBerrys "Vendor Portal" reports are suboptimal from a modern developer perspective (e.g.: no "total-daily-revenue" chart).
 
 Reason B:
->>Data aggregation services like "Distimo" (now "AppAnnie") have dropped support for BlackBerry after BB has introduced the new backend in 2014. Thus we'll have to do it on our own (or point them to this project and hope they integrate it).
+> Data aggregation services like "Distimo" (now "AppAnnie") have dropped support for BlackBerry after BB has introduced the new backend in 2014. Thus we'll have to do it on our own (or point them to this project and hope they integrate it).
 
 Reason C:
->>I love my daily reports to be complete! This means they have to include the data from ALL stores - not "most" of them.
+> I love my daily reports to be complete! This means they have to include the data from ALL stores - not "most" of them.
 
 How to use it?
 ---------------
@@ -47,7 +47,7 @@ Use Composer to install the bundle:
         }
     ],
     "require": {
-        "bbstats": "1.0.*"
+        "geoathome/bbstats": "1.0.*"
     }
 }
 </pre>
