@@ -26,7 +26,7 @@ Well as always, docs are the last thing on the ToDo list but a look into the cod
 
 Look in:
 
-  * (vendor/geoathome/bbstats/src/BlackBerryStats.php)
+  * src/BlackBerryStats.php (vendor/geoathome/bbstats/src/BlackBerryStats.php)
 	
 Installation Requirements
 ----------------------------
