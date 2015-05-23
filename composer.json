@@ -4,7 +4,6 @@
     "keywords": ["BB", "BlackBerry", "vendor portal", "reports"],
     "homepage": "http://github.com/geo-at-github/bbstats",
     "type": "library",
-    "version" : "1.0.0",
     "license": "MIT",
     "authors": [
         {
@@ -28,7 +27,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-master": "1.0.0"
+            "dev-master": "1.0.*"
         }
     }
 }
