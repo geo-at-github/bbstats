@@ -27,6 +27,33 @@ Well as always, docs are the last thing on the ToDo list but a look into the cod
 Look in:
 
   * src/BlackBerryStats.php (vendor/geoathome/bbstats/src/BlackBerryStats.php)
+
+Example:
+
+<pre>
+$reportRangeInDays = 14; // 2 weeks back
+$username = "user@example.org";
+$password = "supersecretpassword";
+$numericAppId = 12345678;
+
+// Init the service (you may also use "$stats = new BlackBerryStats()" in a none symfony context)
+$stats = $this->get('bbstats');
+
+// Login (takes a few seconds)
+$stats->login( $username, $password );
+
+// schedule a report
+$stats->scheduleReport( $numericAppId, BlackBerryStats::REPORT_TYPE_PURCHASES, $reportRangeInDays * -1 );
+
+// wait for BlackBerry to actually create the report
+sleep(3);
+
+// fetch a list of all available reports (newest are first)
+$reports = $stats->getReports();
+
+// download and "interpret" the newest report data
+$reportData = $stats->downloadReport( $reports[0], null, true );
+</pre>
 	
 Installation Requirements
 ----------------------------
@@ -62,32 +89,6 @@ Use Composer to install the bundle:
 }
 </pre>
 
-Usage
------
-<pre>
-$reportRangeInDays = 14; // 2 weeks back
-$username = "user@example.org";
-$password = "supersecretpassword";
-$numericAppId = 12345678;
-
-// Init the service (you may also use "$stats = new BlackBerryStats()" in a none symfony context)
-$stats = $this->get('bbstats');
-
-// Login (takes a few seconds)
-$stats->login( $username, $password );
-
-// schedule a report
-$stats->scheduleReport( $numericAppId, BlackBerryStats::REPORT_TYPE_PURCHASES, $reportRangeInDays * -1 );
-
-// wait for BlackBerry to actually create the report
-sleep(3);
-
-// fetch a list of all available reports (newest are first)
-$reports = $stats->getReports();
-
-// download and "interpret" the newest report data
-$reportData = $stats->downloadReport( $reports[0], null, true );
-</pre>
 
 
 Symfony
