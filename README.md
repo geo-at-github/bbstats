@@ -47,7 +47,7 @@ Use Composer to install the bundle:
         }
     ],
     "require": {
-        "geoathome/bbstats": "1.0.*"
+        "bbstats": "1.0.*"
     }
 }
 </pre>
