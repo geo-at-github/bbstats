@@ -32,7 +32,7 @@ Installation Requirements
 ----------------------------
   * Symfony >= 2.3 (http://symfony.com) - Check the Install instructions below in the "Symfony" section.
   * Guzzle 5.3.0 (https://github.com/guzzle/guzzle or https://guzzle.readthedocs.org)
-  * PHP >= 5.3.3
+  * PHP >= 5.4.0
   * PHP - Curl support
   * PHP - ZipArchive class support
 
