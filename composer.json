@@ -1,0 +1,34 @@
+{
+    "name": "geoathome/bbstats",
+    "description": "A BlackBerry Vendor Portal Data Export Service",
+    "keywords": ["BB", "BlackBerry", "vendor portal", "reports"],
+    "homepage": "http://github.com/geo-at-github/bbstats",
+    "type": "library",
+    "version" : "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Georg Kamptner",
+            "email": "public@geoathome.at",
+            "homepage": "http://geoathome.at"
+        }
+    ],
+    "require": {
+        "php": ">=5.4.0",
+        "guzzlehttp/guzzle": "5.3.*"
+    },
+    "require-dev": {
+    },
+    "suggest": {
+    },
+    "autoload": {
+        "psr-4": {
+            "GeoAtHome\\BBStats": "src/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0.0"
+        }
+    }
+}
