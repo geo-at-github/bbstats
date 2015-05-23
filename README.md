@@ -1,5 +1,5 @@
-"BBStats" - a BlackBerry Vendor Portal Data Export API
-======================================================
+"BBStats" - a BlackBerry Vendor Portal Data Export Service
+==========================================================
 
 What is this?
 -------------
@@ -26,8 +26,7 @@ Well as always, docs are the last thing on the ToDo list but a look into the cod
 
 Look in:
 
-  * src/App/MainBundle/Controller/DefaultController.php
-  * src/App/MainBundle/Service/BrowserService.php
+  * (vendor/geoathome/bbstats/src/BlackBerryStats.php)
 	
 Installation Requirements
 ----------------------------
@@ -35,6 +34,16 @@ Installation Requirements
   * PHP >= 5.3.3
   * PHP - Curl support
   * PHP - ZipArchive class support
+
+Symfony Service Configuration (services.yml):
+
+<pre>
+services:
+  bbstats:
+    class:  GeoAtHome\BBStats\BlackBerryStats
+    arguments:
+        tmpDir : "%kernel.root_dir%/../tmp/"
+</pre>
 
 Use Composer to install the bundle:
 
@@ -51,6 +60,34 @@ Use Composer to install the bundle:
     }
 }
 </pre>
+
+Usage
+-----
+<pre>
+$reportRangeInDays = 14; // 2 weeks back
+$username = "user@example.org";
+$password = "supersecretpassword";
+$numericAppId = 12345678;
+
+// Init the service (you may also use "$stats = new BlackBerryStats()" in a none symfony context)
+$stats = $this->get('bbstats');
+
+// Login (takes a few seconds)
+$stats->login( $username, $password );
+
+// schedule a report
+$stats->scheduleReport( $numericAppId, BlackBerryStats::REPORT_TYPE_PURCHASES, $reportRangeInDays * -1 );
+
+// wait for BlackBerry to actually create the report
+sleep(3);
+
+// fetch a list of all available reports (newest are first)
+$reports = $stats->getReports();
+
+// download and "interpret" the newest report data
+$reportData = $stats->downloadReport( $reports[0], null, true );
+</pre>
+
 
 Symfony
 =======
