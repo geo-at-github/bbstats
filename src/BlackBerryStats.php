@@ -27,6 +27,11 @@ class BlackBerryStats
     const REPORT_TYPE_REVIEWS = 5;
 
     /**
+     * @var array;
+     */
+    protected $REPORT_DOWNLOAD_FILENAMES;
+
+    /**
      * @var array
      */
     protected $queue;
@@ -90,6 +95,14 @@ class BlackBerryStats
      */
     public function __construct( $tmpDir )
     {
+        $this->REPORT_DOWNLOAD_FILENAMES = array(
+            1 => "%s_Downloads_for_%s_to_%s_by_date.zip",
+            2 => "%s_DownloadSummary_%s_to_%s_by_date",
+            3 => "%s_Purchase_for_%s_to_%s_by_date.zip",
+            4 => "%s_Subscriptions_for_%s_to_%s_by_day.zip", // not sure this is correct, ToDO: test it
+            5 => "%s_Reviews_%s_to_%s_by_date.zip"
+        );
+
         $this->tmpDir = $tmpDir;
         $this->tmp = array();
         $this->client = new \GuzzleHttp\Client();
@@ -203,7 +216,32 @@ class BlackBerryStats
 
     public function logout()
     {
-        // ToDo: logout
+        if( empty($this->loginTokens) )
+        {
+            trigger_error( "BlackBerryStats::logout(): Login tokens are empty. Login first!" );
+            return;
+        }
+
+        $csrfToken = $this->loginTokens["csrfToken"];
+
+        $url = "https://appworld.blackberry.com/isvportal/logout.do";
+        $response = $this->client->get($url, array(
+            "config" => array(
+                "curl" => $this->defaultCurlOptions
+            ),
+            "headers" => array(
+                    "Referer" => "https://appworld.blackberry.com/isvportal/reports/home.do?csrfToken=" . $csrfToken,
+                ) + $this->defaultHeaders,
+            "query" => array(
+                "rand" => rand(1000,9999)
+            ),
+            "cookies" => $this->cookieJar
+        ));
+
+        // empty the login token since they are now useless
+        $this->loginTokens = array();
+
+        return $response;
     }
 
     protected function reqHome()
@@ -301,9 +339,6 @@ class BlackBerryStats
     {
         $result = $response->getBody()->getContents();
 
-        // Referer
-        $this->tmp["auth"]["Location"] = $response->getHeader("Location");
-
         $this->tmp["callbackuri"]["formId:logincommandLink"] = $this->extract( $result, 'name="formId:logincommandLink".+?value="', '"' );
         $this->tmp["callbackuri"]["callbackuri"]             = $this->extract( $result, 'name="callbackuri".+?value="', '"' );
         $this->tmp["callbackuri"]["userdata"]                = $this->extract( $result, 'name="userdata".+?value="', '"' );
@@ -329,7 +364,7 @@ class BlackBerryStats
         // add to cookies jar
         $this->cookieJar->setCookie( new SetCookie(array(
             "Name"      => "bbidcchk",
-            "Value"     => 1,
+            "Value"     => $this->tmp["callbackuri"]["bbidcchk"],
             "Secure"    => 1,
             "Path"      => "/bbid",
             "Domain"    => "blackberryid.blackberry.com",
@@ -478,7 +513,7 @@ class BlackBerryStats
     }
 
     /**
-     * @param $appId ......... Numeric App ID
+     * @param $appId ......... Numeric App ID | "all" (Report for all Aps).
      * @param $reportType .... 1 = Downloads
      * @param $startDate ..... int of days (offset to today) or date in format YYYY-MM-DD
      * @param $endDate ....... int of days (offset to today) or date in format YYYY-MM-DD
@@ -511,7 +546,7 @@ class BlackBerryStats
                 "csrfToken"             => $this->loginTokens["csrfToken"],
                 "selectedReportType"    => $reportType,
                 "selectedSubType"       => 0,
-                "selectedContent"       => $appId,
+                "selectedContent"       => ( $appId == "all" ) ? "" : $appId,
                 "selectedVG"            => "",
                 "selectedPeriod"        => 1,
                 "selectedSortOption"    => 0,
@@ -708,4 +743,128 @@ class BlackBerryStats
         }
         return $data;
     }
+
+    /**
+     * Deletes the given report (calls the deleteLink).
+     *
+     * It expects $reports as an array in the form of:
+     *  [
+     *      "downloadLink" => "download.do/?asdasd"
+     *      "fileName" => "File.zip"
+     *      "deleteLink" => "delete.do?asdasd"
+     *  ]
+     *
+     * @param   array   $report         The app array with "deleteLink".
+     *                                  You can get it with the BlackBerryStats::getReports() method.
+     */
+    public function deleteReport( $report )
+    {
+        if( empty($this->loginTokens) )
+        {
+            trigger_error( "BlackBerryStats::deleteReport(): Login tokens are empty. Login first!" );
+            return;
+        }
+
+        $csrfToken = $this->loginTokens["csrfToken"];
+
+        $url = $report["deleteLink"];
+        $response = $this->client->get($url, array(
+            "config" => array(
+                "curl" => $this->defaultCurlOptions
+            ),
+            "headers" => array(
+                    "Referer" => "https://appworld.blackberry.com/isvportal/reports/home.do?csrfToken=" . $csrfToken,
+                ) + $this->defaultHeaders,
+            "query" => array(
+                "csrfToken" => $this->loginTokens["csrfToken"],
+            ),
+            "cookies" => $this->cookieJar
+        ));
+
+        return $response;
+    }
+
+    /**
+     * Returns all apps meta data in the form of:
+     * [
+     *      [
+     *          "name" => "Super Cool App: Elite Edition"
+     *          "linkName" => "Super_Cool_App_Elite_Edition"
+     *          "appId" => 123456788
+     *      ],
+     *      [
+     *          "name" => "Another Super Cool App: Premium Edition"
+     *          "linkName" => "Another_Super_Cool_App_Premium_Edition"
+     *          "appId" => 123456789
+     *      ]
+     * ]
+     * Attention: How BlackBerry forms the linkName is speculation on our part (it may be wrong in some cases).
+     *            You should rather use the appId whenever possible.
+     *
+     * @return array
+     */
+    public function getApps()
+    {
+        if( empty($this->loginTokens) )
+        {
+            trigger_error( "BlackBerryStats::getApps(): Login tokens are empty. Login first!" );
+            return;
+        }
+
+        $response = $this->reqApps();
+        $result = $this->reqAppsResult($response);
+
+        return $result;
+    }
+
+    protected function reqApps()
+    {
+        $url = "https://appworld.blackberry.com/isvportal/reports/fetchProductsAction.do";
+        $response = $this->client->post($url, array(
+            "config" => array(
+                "curl" => $this->defaultCurlOptions
+            ),
+            "headers" => array(
+                "Referer" => "https://appworld.blackberry.com/isvportal/reports/scheduleDataPage.do?csrfToken=" . $this->loginTokens["csrfToken"]
+                ) + $this->defaultHeaders,
+            "body" => array(
+                "csrfToken" => $this->loginTokens["csrfToken"],
+                "selectedReportType" => 1,
+                "selectedSubType" => 0,
+                "selectedContent" => 0,
+                "selectedVG" => "",
+                "selectedPeriod" => 1,
+                "startDate" => "",
+                "endDate" => ""
+            ),
+            "cookies" => $this->cookieJar
+        ));
+
+        return $response;
+    }
+
+    protected function reqAppsResult( \GuzzleHttp\Message\MessageInterface $response )
+    {
+        $result = $response->json();
+        array_shift($result["contents"]); // first entry is "All Aps"
+
+        $apps = array();
+        foreach($result["contents"] as $key => $currApp)
+        {
+            $app = array(
+                "name"      => $currApp["name"],
+                "linkName"  => $currApp["name"],
+                "appId"     => $currApp["id"]
+            );
+            // transform linkName
+            // How BlackBerry forms the linkName is speculation on our part (it may be wrong in some cases).
+            $app["linkName"] = mb_ereg_replace('[^a-zA-z0-9 ]', "", $app["linkName"]);
+            $app["linkName"] = mb_ereg_replace(' +', "_", $app["linkName"] );
+
+            array_push( $apps, $app );
+        }
+
+        return $apps;
+    }
+
 }
