@@ -22,13 +22,22 @@ Reason C:
 
 How to use it?
 ---------------
-Well as always, docs are the last thing on the ToDo list but a look into the code should give you a good start. It should be pretty straight forward.
+As always, docs are the last thing on the ToDo list. A look into the code should give you a good start (look for public methods in src/BlackBerryStats.php aka vendor/geoathome/bbstats/src/BlackBerryStats.php).
 
-Look in:
 
-  * src/BlackBerryStats.php (vendor/geoathome/bbstats/src/BlackBerryStats.php)
+Features
+--------
+  * login / logout
+  * list all apps with name and app id
+  * schedule reports ( Downloads, Downloads_Summary, Subscription, Purchases, Reviews )
+  * list all available reports
+  * download reports (download > unzip > extract csv to ASSOC array)
+  * delete reports
 
-Example (all purchases of the last 25 days for one specific app):
+Examples
+----------
+
+A) Get all purchases of the last 25 days for one specific app:
 <pre>
 $reportRangeInDays = 14; // 2 weeks back
 $username = "user@example.org";
@@ -56,7 +65,7 @@ $reportData = $stats->downloadReport( $reports[0], null, true );
 	
 Installation Requirements
 ----------------------------
-  * Symfony >= 2.3 optional - (http://symfony.com/download, http://symfony.com/doc/2.3/book/installation.html)
+  * Symfony >= 2.3 is optional - (http://symfony.com/download, http://symfony.com/doc/2.3/book/installation.html)
   * Guzzle 5.3.0 (https://github.com/guzzle/guzzle or https://guzzle.readthedocs.org)
   * PHP >= 5.4.0
   * PHP - Curl support
