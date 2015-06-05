@@ -20,6 +20,10 @@ Reason B:
 Reason C:
 > Data aggregation services like "Distimo" (now "AppAnnie") have dropped support for BlackBerry after BB has introduced the new backend in 2014. Thus we'll have to do it on our own (or point them to this project and hope they integrate it).
 
+Demo
+----
+Check out the live demo:
+> http://bbstats.modalog.at
 
 How to use it?
 ---------------
