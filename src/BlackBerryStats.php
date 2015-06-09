@@ -785,6 +785,36 @@ class BlackBerryStats
     }
 
     /**
+     * Deletes all reports.
+     */
+    public function deleteAllReports()
+    {
+        if( empty($this->loginTokens) )
+        {
+            trigger_error( "BlackBerryStats::deleteAllReports(): Login tokens are empty. Login first!" );
+            return;
+        }
+
+        $csrfToken = $this->loginTokens["csrfToken"];
+
+        $url = "https://appworld.blackberry.com/isvportal/reports/deleteAllData.do";
+        $response = $this->client->get($url, array(
+            "config" => array(
+                "curl" => $this->defaultCurlOptions
+            ),
+            "headers" => array(
+                    "Referer" => "https://appworld.blackberry.com/isvportal/reports/home.do?csrfToken=" . $csrfToken,
+                ) + $this->defaultHeaders,
+            "query" => array(
+                "csrfToken" => $this->loginTokens["csrfToken"],
+            ),
+            "cookies" => $this->cookieJar
+        ));
+
+        return $response;
+    }
+
+    /**
      * Returns all apps meta data in the form of:
      * [
      *      [
