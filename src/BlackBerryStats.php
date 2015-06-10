@@ -16,6 +16,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Cookie\CookieJar;
 use GuzzleHttp\Cookie\SetCookie;
 use GuzzleHttp\Message\MessageInterface;
+use Symfony\Component\Validator\Constraints\DateTime;
 
 
 class BlackBerryStats
@@ -95,9 +96,11 @@ class BlackBerryStats
      */
     public function __construct( $tmpDir )
     {
+        // index corresponds to BlackBerryStats::REPORT_TYPE_...
+        // Example: Super_Awesome_App_DownloadSummary_11_May_2015_to_10_Jun_2015_by_date.zip
         $this->REPORT_DOWNLOAD_FILENAMES = array(
             1 => "%s_Downloads_for_%s_to_%s_by_date.zip",
-            2 => "%s_DownloadSummary_%s_to_%s_by_date",
+            2 => "%s_DownloadSummary_%s_to_%s_by_date.zip",
             3 => "%s_Purchase_for_%s_to_%s_by_date.zip",
             4 => "%s_Subscriptions_for_%s_to_%s_by_day.zip", // not sure this is correct, ToDO: test it
             5 => "%s_Reviews_%s_to_%s_by_date.zip"
@@ -514,7 +517,7 @@ class BlackBerryStats
 
     /**
      * @param $appId ......... Numeric App ID | "all" (Report for all Aps).
-     * @param $reportType .... 1 = Downloads
+     * @param $reportType .... BlackBerryStats::REPORT_TYPE_*
      * @param $startDate ..... int of days (offset to today) or date in format YYYY-MM-DD
      * @param $endDate ....... int of days (offset to today) or date in format YYYY-MM-DD
      * @return BrowserRequest
@@ -895,6 +898,52 @@ class BlackBerryStats
         }
 
         return $apps;
+    }
+
+    /**
+     * Returns the report download file name for the given app and report type.
+     *
+     * Example:
+     *  IN: App data of "Super Awesome App", BlackBerryStats::REPORT_TYPE_DOWNLOADS_SUMMARY, 2015-05-11, 2015-06-10
+     *  OUT: "Super_Awesome_App_DownloadSummary_11_May_2015_to_10_Jun_2015_by_date.zip"
+     *
+     * @param $app ........... App Entry as returned by BlackBerryStats::getApps()
+     * @param $reportType .... BlackBerryStats::REPORT_TYPE_*
+     * @param $startDate ..... int of days (offset to today) or date in format YYYY-MM-DD
+     * @param $endDate ....... int of days (offset to today) or date in format YYYY-MM-DD
+     */
+    public function getReportDownloadFileNameForApp( $app, $reportType, $startDate = -14, $endDate = 0 )
+    {
+        if( empty($app) or !array_key_exists('linkName', $app) )
+        {
+            trigger_error( "BlackBerryStats::getReportDownloadFileNameForApp(): Parameter app is empty or key 'linkName' is missing!" );
+            return;
+        }
+
+        if( is_numeric($startDate) ){
+            $st = time() + 60 * 60 * 24 * $startDate;
+            $startDate = date_create( "@$st" );
+        } else {
+            $startDate = date_create_from_format('Y-m-d', $startDate);
+        }
+
+        if( is_numeric($endDate) ){
+            $st = time() + 60 * 60 * 24 * $endDate;
+            $endDate =  date_create( "@$st" );
+        } else {
+            $endDate = date_create_from_format('Y-m-d', $endDate);
+        }
+
+        // convert "%s_DownloadSummary_%s_to_%s_by_date"
+        //  to
+        // Super_Awesome_App_DownloadSummary_11_May_2015_to_10_Jun_2015_by_date.zip
+
+        $baseStr = $this->REPORT_DOWNLOAD_FILENAMES[$reportType];
+        $appName = $app['linkName'];
+        $startDateStr = date_format($startDate, 'd_M_Y');
+        $endDateStr = date_format($endDate, 'd_M_Y');
+
+        return sprintf( $baseStr, $appName, $startDateStr, $endDateStr );
     }
 
 }
