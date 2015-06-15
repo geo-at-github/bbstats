@@ -33,11 +33,22 @@ As always, docs are the last thing on the ToDo list. A look into the code should
 Features
 --------
   * login / logout
+   * <pre>BlackBerryStats::login( $username, $password )</pre>
+   * <pre>BlackBerryStats::logout()</pre>
   * list all apps with name and app id
-  * schedule reports ( Downloads, Downloads_Summary, Subscription, Purchases, Reviews )
+   * <pre>BlackBerryStats::getApps()</pre>
   * list all available reports
-  * download reports (download > unzip > extract csv to ASSOC array)
-  * delete reports
+   * <pre>BlackBerryStats::getReports()</pre>
+  * schedule report ( Downloads, Downloads_Summary, Subscription, Purchases, Reviews )
+   * <pre>BlackBerryStats::scheduleReport( $appId, $reportType, $startDate, $endDate )</pre>
+  * download report (download > unzip > extract csv to ASSOC array)
+   * <pre>BlackBerryStats::downloadReport( $report, $filePath, $returnCsvData )</pre>
+  * get the processing state of a report
+   * <pre>BlackBerryStats::getReportState( $app, $reportType, $startDate, $endDate )</pre>
+  * delete report
+   * <pre>BlackBerryStats:deleteReport( $report )</pre>
+  * delete all reports
+   * <pre>BlackBerryStats::deleteAllReports()</pre>
 
 Examples
 ----------
@@ -58,7 +69,8 @@ $stats->login( $username, $password );
 // schedule a report
 $stats->scheduleReport( $numericAppId, BlackBerryStats::REPORT_TYPE_PURCHASES, $reportRangeInDays * -1 );
 
-// wait for BlackBerry to actually create the report
+// Wait for BlackBerry to actually create the report
+// It can take even longer for big reports, max limit by BB is 500.000 entries per request.
 sleep(3);
 
 // fetch a list of all available reports (newest are first)
@@ -84,7 +96,8 @@ $stats->login( $username, $password );
 // schedule a report
 $stats->scheduleReport( $numericAppId, BlackBerryStats::REPORT_TYPE_DOWNLOADS_SUMMARY, $reportRangeInDays * -1 );
 
-// wait for BlackBerry to actually create the report
+// Wait for BlackBerry to actually create the report 
+// It can take even longer for big reports, max limit by BB is 500.000 entries per request.
 sleep(3);
 
 // fetch a list of all available reports (newest are first)
@@ -123,7 +136,7 @@ Use Composer to install the bundle:
         }
     ],
     "require": {
-        "geoathome/bbstats": "1.1.*"
+        "geoathome/bbstats": "1.2.*"
     }
 }
 </pre>

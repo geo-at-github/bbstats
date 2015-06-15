@@ -4,6 +4,9 @@
  * This file is part of the BlackBerryStats (BBStats) package.
  *
  * (c) Georg Kamptner <public@geoathome.at>
+ * Available on GitHub: https://github.com/geo-at-github/bbstats
+ *
+ * MIT License
  *
  * For the full copyright and license information, please view the LICENSE
  * file that was distributed with this source code.
@@ -21,11 +24,15 @@ use Symfony\Component\Validator\Constraints\DateTime;
 
 class BlackBerryStats
 {
-    const REPORT_TYPE_DOWNLOADS = 1;
+    const REPORT_TYPE_DOWNLOADS         = 1;
     const REPORT_TYPE_DOWNLOADS_SUMMARY = 2;
-    const REPORT_TYPE_PURCHASES = 3;
-    const REPORT_TYPE_SUBSCRIPTIONS = 4;
-    const REPORT_TYPE_REVIEWS = 5;
+    const REPORT_TYPE_PURCHASES         = 3;
+    const REPORT_TYPE_SUBSCRIPTIONS     = 4;
+    const REPORT_TYPE_REVIEWS           = 5;
+
+    const REPORT_STATE_UNKNOWN      = 0;
+    const REPORT_STATE_PROCESSING   = 1;
+    const REPORT_STATE_READY        = 2;
 
     /**
      * @var array;
@@ -79,12 +86,14 @@ class BlackBerryStats
      * After login() has finished this contains an array with
      * all the necessary login data for future requests.
      *
+     * <pre>
      * array(
      *   'JSESSIONID'       => '...'
      *   'ISV_COOKIE_DATA'  => '...'
      *   'ISV_SESSION_ID'   => '...'
      *   'csrfToken'        => '...'
      * )
+     * </pre>
      *
      * @var array
      */
@@ -516,10 +525,10 @@ class BlackBerryStats
     }
 
     /**
-     * @param $appId ......... Numeric App ID | "all" (Report for all Aps).
-     * @param $reportType .... BlackBerryStats::REPORT_TYPE_*
-     * @param $startDate ..... int of days (offset to today) or date in format YYYY-MM-DD
-     * @param $endDate ....... int of days (offset to today) or date in format YYYY-MM-DD
+     * @param $appId            int Numeric App ID | "all" (Report for all Aps).
+     * @param $reportType       int BlackBerryStats::REPORT_TYPE_*
+     * @param $startDate        int Nr. of days (offset to today) or date in format YYYY-MM-DD
+     * @param $endDate          int Nr. of days (offset to today) or date in format YYYY-MM-DD
      * @return BrowserRequest
      */
     public function scheduleReport( $appId, $reportType, $startDate = -14, $endDate = 0 )
@@ -564,6 +573,7 @@ class BlackBerryStats
 
     /**
      * Returns reports meta data in the form of:
+     * <pre>
      * [
      *      [
      *          "downloadLink" => "https://appworld.blackberry.com/isvportal/reports/downloadData.do?csrfToken=...&fileName=....zip"
@@ -576,6 +586,9 @@ class BlackBerryStats
      *          "deleteLink" => "https://appworld.blackberry.com/isvportal/reports/deleteData.do?csrfToken=...&fileName=....zip"
      *      ]
      * ]
+     * </pre>
+     *
+     * Be aware that unfinished reports do not show up in the reports list even though their are in processing.
      *
      * @return array
      */
@@ -638,11 +651,13 @@ class BlackBerryStats
      * Downloads and unzips a report into $targetPath.
      *
      * It expects $reports as an array in the form of:
+     * <pre>
      *  [
      *      "downloadLink" => "download.do/?asdasd"
      *      "fileName" => "File.zip"
      *      "deleteLink" => "delete.do?asdasd"
      *  ]
+     * </pre>
      *
      * @param   array   $report         The report array with "downloadLink", "fileName" and "deleteLink".
      *                                  You can get it with the BlackBerryStats::getReports() method.
@@ -751,11 +766,13 @@ class BlackBerryStats
      * Deletes the given report (calls the deleteLink).
      *
      * It expects $reports as an array in the form of:
+     * <pre>
      *  [
      *      "downloadLink" => "download.do/?asdasd"
      *      "fileName" => "File.zip"
      *      "deleteLink" => "delete.do?asdasd"
      *  ]
+     *  </pre>
      *
      * @param   array   $report         The app array with "deleteLink".
      *                                  You can get it with the BlackBerryStats::getReports() method.
@@ -819,6 +836,7 @@ class BlackBerryStats
 
     /**
      * Returns all apps meta data in the form of:
+     * <pre>
      * [
      *      [
      *          "name" => "Super Cool App: Elite Edition"
@@ -831,6 +849,7 @@ class BlackBerryStats
      *          "appId" => 123456789
      *      ]
      * ]
+     * </pre>
      * Attention: How BlackBerry forms the linkName is speculation on our part (it may be wrong in some cases).
      *            You should rather use the appId whenever possible.
      *
@@ -907,12 +926,14 @@ class BlackBerryStats
      *  IN: App data of "Super Awesome App", BlackBerryStats::REPORT_TYPE_DOWNLOADS_SUMMARY, 2015-05-11, 2015-06-10
      *  OUT: "Super_Awesome_App_DownloadSummary_11_May_2015_to_10_Jun_2015_by_date.zip"
      *
-     * @param $app ........... App Entry as returned by BlackBerryStats::getApps()
-     * @param $reportType .... BlackBerryStats::REPORT_TYPE_*
-     * @param $startDate ..... int of days (offset to today) or date in format YYYY-MM-DD
-     * @param $endDate ....... int of days (offset to today) or date in format YYYY-MM-DD
+     * @param $app              array   A single app entry as returned by BlackBerryStats::getApps()
+     * @param $reportType       int     BlackBerryStats::REPORT_TYPE_*
+     * @param $startDate        int     Nr. of days (offset to today) or date in format YYYY-MM-DD
+     * @param $endDate          int     Nr. of days (offset to today) or date in format YYYY-MM-DD
+     *
+     * @return string
      */
-    public function getReportDownloadFileNameForApp( $app, $reportType, $startDate = -14, $endDate = 0 )
+    protected function getReportDownloadFileNameForApp( $app, $reportType, $startDate = -14, $endDate = 0 )
     {
         if( empty($app) or !array_key_exists('linkName', $app) )
         {
@@ -944,6 +965,84 @@ class BlackBerryStats
         $endDateStr = date_format($endDate, 'd_M_Y');
 
         return sprintf( $baseStr, $appName, $startDateStr, $endDateStr );
+    }
+
+    /**
+     * Returns the reports  state which is either BBStats::REPORT_STATE_UNKNOWN,
+     * BBStats::REPORT_STATE_PROCESSING or BBStats::REPORT_STATE_READY.
+     *
+     * Be aware that BBStats::getReports() returns only finished reports.
+     *
+     * Example:
+     *  IN: App data of "Super Awesome App", BlackBerryStats::REPORT_TYPE_DOWNLOADS_SUMMARY, 2015-05-11, 2015-06-10
+     *  OUT: int 0 (which is BBStats::REPORT_STATE_UNKNOWN)
+     *
+     * @param $app              array   A single app entry as returned by BlackBerryStats::getApps()
+     * @param $reportType       int     BlackBerryStats::REPORT_TYPE_*
+     * @param $startDate        int     Nr. of days (offset to today) or date in format YYYY-MM-DD
+     * @param $endDate          int     Nr. of days (offset to today) or date in format YYYY-MM-DD
+     *
+     * @return  int BlackBerryStats::REPORT_STATE_UNKNOWN or
+     *              BlackBerryStats::REPORT_STATE_PROCESSING or
+     *              BlackBerryStats::REPORT_STATE_READY
+     */
+    public function getReportState( $app, $reportType, $startDate = -14, $endDate = 0 )
+    {
+        if( empty($this->loginTokens) )
+        {
+            trigger_error( "BlackBerryStats::getReports(): Login tokens are empty. Login first!" );
+            return;
+        }
+
+        $response = $this->reqReportState();
+        $reportName = $this->getReportDownloadFileNameForApp( $app, $reportType, $startDate, $endDate );
+        $result = $this->reqReportStateResult( $response, $reportName );
+
+        return $result;
+    }
+
+    protected function reqReportState()
+    {
+        $url = "https://appworld.blackberry.com/isvportal/reports/fetchDownloadListAction.do";
+        $response = $this->client->post($url, array(
+            "config" => array(
+                "curl" => $this->defaultCurlOptions
+            ),
+            "headers" => array(
+                    "Referer" => "https://appworld.blackberry.com/isvportal/reports/home.do?csrfToken=" . $this->loginTokens["csrfToken"],
+                ) + $this->defaultHeaders,
+            "body" => array(
+                "csrfToken"   => $this->loginTokens["csrfToken"],
+            ),
+            "cookies" => $this->cookieJar
+        ));
+
+        return $response;
+    }
+
+    protected function reqReportStateResult( \GuzzleHttp\Message\MessageInterface $response, $reportName )
+    {
+        $state = BlackBerryStats::REPORT_STATE_UNKNOWN;
+
+        $result = $response->getBody()->getContents();
+        $matches = array();
+        // Sample: <a href="/isvportal/reports/downloadData.do?csrfToken=WNVZ-J9M0-V86A-1FLF-PPAB-2X69-IJG5-BV2D&fileName=Sniper_Ops_3D_Kill_Terror_Shooter_Downloads_for_23_Apr_2015_to_07_May_2015_by_date.zip" class="data-dump data-ready">Sniper_Ops_3D_Kill_Terror_Shooter_Downloads_for_23_Apr_2015_to_07_May_2015_by_date.zip</a></td>
+        preg_match_all( '|/isvportal/reports/downloadData\.do.+?&fileName='.$reportName.'"|', $result, $matches, PREG_SET_ORDER);
+        if( sizeof($matches) > 0 )
+        {
+            // Report download link found. We can assume that the report is finished.
+            $state = BlackBerryStats::REPORT_STATE_READY;
+        }
+        else
+        {
+            // If we find the filename without .zip then the report is still processing
+            if( stristr( $result, str_replace( ".zip", "", $reportName ) ) !== false )
+            {
+                $state = BlackBerryStats::REPORT_STATE_PROCESSING;
+            }
+        }
+
+        return $state;
     }
 
 }
