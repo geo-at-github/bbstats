@@ -579,11 +579,13 @@ class BlackBerryStats
      *          "downloadLink" => "https://appworld.blackberry.com/isvportal/reports/downloadData.do?csrfToken=...&fileName=....zip"
      *          "fileName" => "....zip"
      *          "deleteLink" => "https://appworld.blackberry.com/isvportal/reports/deleteData.do?csrfToken=...&fileName=....zip"
+     *          "state" => BlackBerryStats::REPORT_STATE_READY
      *      ],
      *      [
      *          "downloadLink" => "https://appworld.blackberry.com/isvportal/reports/downloadData.do?csrfToken=...&fileName=....zip"
      *          "fileName" => "....zip"
      *          "deleteLink" => "https://appworld.blackberry.com/isvportal/reports/deleteData.do?csrfToken=...&fileName=....zip"
+     *          "state" => BlackBerryStats::REPORT_STATE_READY
      *      ]
      * ]
      * </pre>
@@ -982,9 +984,16 @@ class BlackBerryStats
      * @param $startDate        int     Nr. of days (offset to today) or date in format YYYY-MM-DD
      * @param $endDate          int     Nr. of days (offset to today) or date in format YYYY-MM-DD
      *
-     * @return  int BlackBerryStats::REPORT_STATE_UNKNOWN or
-     *              BlackBerryStats::REPORT_STATE_PROCESSING or
-     *              BlackBerryStats::REPORT_STATE_READY
+     *
+     * @return  array   Returns the report meta data in the form of:
+     * <pre>
+     *  [
+     *      "downloadLink" => "https://appworld.blackberry.com/isvportal/reports/downloadData.do?csrfToken=...&fileName=....zip"
+     *      "fileName" => "....zip"
+     *      "deleteLink" => "https://appworld.blackberry.com/isvportal/reports/deleteData.do?csrfToken=...&fileName=....zip"
+     *      "state" => BlackBerryStats::REPORT_STATE_UNKNOWN or BlackBerryStats::REPORT_STATE_PROCESSING or BlackBerryStats::REPORT_STATE_READY
+     *  ]
+     * </pre>
      */
     public function getReportState( $app, $reportType, $startDate = -14, $endDate = 0 )
     {
@@ -1042,7 +1051,14 @@ class BlackBerryStats
             }
         }
 
-        return $state;
+        $report = array(
+            "downloadLink"  => "https://appworld.blackberry.com/isvportal/reports/downloadData.do?csrfToken=".$this->loginTokens["csrfToken"]."&fileName=".$reportName,
+            "fileName"      => $reportName,
+            "deleteLink"    => "https://appworld.blackberry.com/isvportal/reports/deleteData.do?csrfToken=".$this->loginTokens["csrfToken"]."&fileName=".$reportName,
+            "state"         => $state
+        );
+
+        return $report;
     }
 
 }
