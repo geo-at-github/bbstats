@@ -136,7 +136,7 @@ Use Composer to install the bundle:
         }
     ],
     "require": {
-        "geoathome/bbstats": "1.2.*"
+        "geoathome/bbstats": "dev-master"
     }
 }
 </pre>
