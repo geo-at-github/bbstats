@@ -208,6 +208,14 @@ class BlackBerryStats
         return null;
     }
 
+    /**
+     * Logs the user in and returns an ASSOC array with the login tokens or an empty array if the login failed.
+     *
+     * @param   string      $username
+     * @param   string      $password
+     *
+     * @return array    Returns an ASSOC array with the login tokens or an empty array if the login failed.
+     */
     public function login( $username, $password )
     {
         $this->tmp['loginData']['username'] = $username;
@@ -474,13 +482,21 @@ class BlackBerryStats
 
         $csrfToken = $this->extract( $result, 'home.do\?csrfToken=', '"' );
 
-        // save token and session data
-        $this->loginTokens = array(
-            "JSESSIONID"       => $this->getCookie("JSESSIONID", "/isvportal", "Value"),
-            "ISV_COOKIE_DATA"  => $this->getCookie("ISV_COOKIE_DATA", "/isvportal", "Value"),
-            "ISV_SESSION_ID"   => $this->getCookie("ISV_SESSION_ID", "/isvportal", "Value"),
-            "csrfToken"        => $csrfToken
-        );
+        // save token and session data if available
+        if( $this->getCookie("ISV_SESSION_ID", "/isvportal", "Value") !== null )
+        {
+            $this->loginTokens = array(
+                "JSESSIONID"       => $this->getCookie("JSESSIONID", "/isvportal", "Value"),
+                "ISV_COOKIE_DATA"  => $this->getCookie("ISV_COOKIE_DATA", "/isvportal", "Value"),
+                "ISV_SESSION_ID"   => $this->getCookie("ISV_SESSION_ID", "/isvportal", "Value"),
+                "csrfToken"        => $csrfToken
+            );
+        }
+        else
+        {
+            // login failed > reset loginTokens to empty array
+            $this->loginTokens = array();
+        }
 
         return $this->loginTokens;
     }
@@ -525,6 +541,30 @@ class BlackBerryStats
     }
 
     /**
+     * @param   mixed       $date       Either an int (offset in days relative to time()) or
+     *                                  a date in the format $format ( default: "Y-m-d" ).
+     * @param   string      $format     A date format (default is "Y-m-d" e.g. YYYY-MM-DD).
+     * @return  \DateTime
+     */
+    protected function getDateTimeFromInput( $date, $format = 'Y-m-d' )
+    {
+        if( is_numeric($date) )
+        {
+            $st = time() + 60 * 60 * 24 * $date;
+            $result = date_create();
+            date_timestamp_set( $result, $st );
+        }
+        else
+        {
+            $result = date_create_from_format($format, $date);
+        }
+        $result->setTime(1,1,1);
+
+        return $result;
+    }
+
+
+    /**
      * @param $appId            int Numeric App ID | "all" (Report for all Aps).
      * @param $reportType       int BlackBerryStats::REPORT_TYPE_*
      * @param $startDate        int Nr. of days (offset to today) or date in format YYYY-MM-DD
@@ -539,13 +579,8 @@ class BlackBerryStats
             return;
         }
 
-        if( is_numeric($startDate) ){
-            $startDate = date("Y-m-d", time() + 60 * 60 * 24 * $startDate );
-        }
-        if( is_numeric($endDate) ){
-            $endDate = date("Y-m-d", time() + 60 * 60 * 24 * $endDate );
-        }
-
+        $startDate = $this->getDateTimeFromInput( $startDate, "Y-m-d" );
+        $endDate = $this->getDateTimeFromInput( $endDate, "Y-m-d" );
         $url = "https://appworld.blackberry.com/isvportal/reports/scheduleData.do";
         $response = $this->client->post($url, array(
             "config" => array(
@@ -562,8 +597,8 @@ class BlackBerryStats
                 "selectedVG"            => "",
                 "selectedPeriod"        => 1,
                 "selectedSortOption"    => 0,
-                "startDate"             => $startDate,
-                "endDate"               => $endDate,
+                "startDate"             => $startDate->format("Y-m-d"),
+                "endDate"               => $endDate->format("Y-m-d"),
             ),
             "cookies" => $this->cookieJar
         ));
@@ -928,7 +963,7 @@ class BlackBerryStats
      *  IN: App data of "Super Awesome App", BlackBerryStats::REPORT_TYPE_DOWNLOADS_SUMMARY, 2015-05-11, 2015-06-10
      *  OUT: "Super_Awesome_App_DownloadSummary_11_May_2015_to_10_Jun_2015_by_date.zip"
      *
-     * @param $app              array   A single app entry as returned by BlackBerryStats::getApps()
+     * @param $app              array   A single app entry as returned by BlackBerryStats::getApps() or "all"
      * @param $reportType       int     BlackBerryStats::REPORT_TYPE_*
      * @param $startDate        int     Nr. of days (offset to today) or date in format YYYY-MM-DD
      * @param $endDate          int     Nr. of days (offset to today) or date in format YYYY-MM-DD
@@ -937,24 +972,22 @@ class BlackBerryStats
      */
     protected function getReportDownloadFileNameForApp( $app, $reportType, $startDate = -14, $endDate = 0 )
     {
-        if( empty($app) or !array_key_exists('linkName', $app) )
+        if( $app != "all" )
         {
-            trigger_error( "BlackBerryStats::getReportDownloadFileNameForApp(): Parameter app is empty or key 'linkName' is missing!" );
-            return;
+            if( empty($app) or !array_key_exists('linkName', $app) )
+            {
+                trigger_error( "BlackBerryStats::getReportDownloadFileNameForApp(): Parameter app is empty or key 'linkName' is missing!" );
+                return;
+            }
         }
-
-        if( is_numeric($startDate) ){
-            $st = time() + 60 * 60 * 24 * $startDate;
-            $startDate = date_create( "@$st" );
-        } else {
-            $startDate = date_create_from_format('Y-m-d', $startDate);
-        }
-
-        if( is_numeric($endDate) ){
-            $st = time() + 60 * 60 * 24 * $endDate;
-            $endDate =  date_create( "@$st" );
-        } else {
-            $endDate = date_create_from_format('Y-m-d', $endDate);
+        else
+        {
+            // construct $app for an "All Applications" report.
+            $app = array(
+                "name"      => "All Applications",
+                "linkName"  => "All_Applications",
+                "appId"     => "all"
+            );
         }
 
         // convert "%s_DownloadSummary_%s_to_%s_by_date"
@@ -963,10 +996,10 @@ class BlackBerryStats
 
         $baseStr = $this->REPORT_DOWNLOAD_FILENAMES[$reportType];
         $appName = $app['linkName'];
-        $startDateStr = date_format($startDate, 'd_M_Y');
-        $endDateStr = date_format($endDate, 'd_M_Y');
+        $startDate = $this->getDateTimeFromInput( $startDate, "Y-m-d" );
+        $endDate = $this->getDateTimeFromInput( $endDate, "Y-m-d" );
 
-        return sprintf( $baseStr, $appName, $startDateStr, $endDateStr );
+        return sprintf( $baseStr, $appName, $startDate->format("d_M_Y"), $endDate->format("d_M_Y") );
     }
 
     /**
