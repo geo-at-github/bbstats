@@ -238,8 +238,7 @@ class BlackBerryStats
     {
         if( empty($this->loginTokens) )
         {
-            trigger_error( "BlackBerryStats::logout(): Login tokens are empty. Login first!" );
-            return;
+            return true;
         }
 
         $csrfToken = $this->loginTokens["csrfToken"];
@@ -897,7 +896,7 @@ class BlackBerryStats
         if( empty($this->loginTokens) )
         {
             trigger_error( "BlackBerryStats::getApps(): Login tokens are empty. Login first!" );
-            return;
+            return null;
         }
 
         $response = $this->reqApps();
@@ -1067,12 +1066,15 @@ class BlackBerryStats
         $state = BlackBerryStats::REPORT_STATE_UNKNOWN;
 
         $result = $response->getBody()->getContents();
-        $matches = array();
-        // Sample: <a href="/isvportal/reports/downloadData.do?csrfToken=WNVZ-J9M0-V86A-1FLF-PPAB-2X69-IJG5-BV2D&fileName=Sniper_Ops_3D_Kill_Terror_Shooter_Downloads_for_23_Apr_2015_to_07_May_2015_by_date.zip" class="data-dump data-ready">Sniper_Ops_3D_Kill_Terror_Shooter_Downloads_for_23_Apr_2015_to_07_May_2015_by_date.zip</a></td>
-        preg_match_all( '|/isvportal/reports/downloadData\.do.+?&fileName='.$reportName.'"|', $result, $matches, PREG_SET_ORDER);
-        if( sizeof($matches) > 0 )
+        // make sure the report name ends with (.zip)
+        if( stristr( $reportName, ".zip" ) === false )
         {
-            // Report download link found. We can assume that the report is finished.
+            $reportName .= ".zip";
+        }
+        // if the report .zip is in the text then the report can be downloaded
+        if( stristr( $result, $reportName ) !== false )
+        {
+            // Report ".zip" found in text. We can assume that the report is finished.
             $state = BlackBerryStats::REPORT_STATE_READY;
         }
         else
