@@ -370,6 +370,7 @@ class BlackBerryStats
         $this->tmp["callbackuri"]["rpid"]                    = $this->extract( $result, 'name="rpid".+?value="', '"' );
         $this->tmp["callbackuri"]["sig"]                     = $this->extract( $result, 'name="sig".+?value="', '"' );
         $this->tmp["callbackuri"]["azEdit"]                  = $this->extract( $result, 'name="azEdit".+?value="', '"' );
+        $this->tmp["callbackuri"]["csrfToken"]               = $this->extract( $result, 'name="csrfToken".+?value="', '"' );
         $this->tmp["callbackuri"]["javax.faces.ViewState"]   = $this->extract( $result, 'name="javax.faces.ViewState".+?value="', '"' );
 
         // extract bbidcchk cookie data from javascript
@@ -417,6 +418,7 @@ class BlackBerryStats
                 "rpid"                      => $this->tmp["callbackuri"]["rpid"],
                 "sig"                       => $this->tmp["callbackuri"]["sig"],
                 "azEdit"                    => $this->tmp["callbackuri"]["azEdit"],
+                "csrfToken"                 => $this->tmp["callbackuri"]["csrfToken"],
                 "javax.faces.ViewState"     => $this->tmp["callbackuri"]["javax.faces.ViewState"],
                 "conversationPropagation"   => "join"
             ),
